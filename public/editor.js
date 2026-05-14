@@ -12,6 +12,7 @@ const state = {
   isVertical: false,
   previewDebounce: null,
   editors: {},
+  sessionPassword: null,
 };
 
 /* ===== INIT ===== */
@@ -254,8 +255,26 @@ function bindUI() {
     resetProject();
   });
 
-  // Publish
-  document.getElementById('publishBtn').addEventListener('click', publishSite);
+  // Publish — show password modal first
+  document.getElementById('publishBtn').addEventListener('click', openPasswordModal);
+
+  // Password modal
+  document.getElementById('pwCancel').addEventListener('click', closePasswordModal);
+  document.getElementById('pwConfirm').addEventListener('click', handlePasswordConfirm);
+  document.getElementById('pwModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('pwModal')) closePasswordModal();
+  });
+  document.getElementById('pwInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handlePasswordConfirm();
+    if (e.key === 'Escape') closePasswordModal();
+  });
+  document.getElementById('togglePwBtn').addEventListener('click', () => {
+    const input = document.getElementById('pwInput');
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    document.querySelector('#togglePwBtn .eye-open').style.display = isHidden ? 'none' : '';
+    document.querySelector('#togglePwBtn .eye-closed').style.display = isHidden ? '' : 'none';
+  });
 
   // Copy link
   document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
@@ -293,21 +312,83 @@ function bindUI() {
   });
 }
 
+/* ===== PASSWORD MODAL ===== */
+function openPasswordModal() {
+  if (state.sessionPassword) {
+    publishSite(state.sessionPassword);
+    return;
+  }
+  const modal = document.getElementById('pwModal');
+  const input = document.getElementById('pwInput');
+  const errorEl = document.getElementById('pwError');
+  input.value = '';
+  errorEl.textContent = '';
+  input.type = 'password';
+  document.querySelector('#togglePwBtn .eye-open').style.display = '';
+  document.querySelector('#togglePwBtn .eye-closed').style.display = 'none';
+  modal.style.display = 'flex';
+  setTimeout(() => input.focus(), 80);
+}
+
+function closePasswordModal() {
+  document.getElementById('pwModal').style.display = 'none';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').textContent = '';
+}
+
+async function handlePasswordConfirm() {
+  const input = document.getElementById('pwInput');
+  const errorEl = document.getElementById('pwError');
+  const confirmBtn = document.getElementById('pwConfirm');
+  const pw = input.value.trim();
+
+  if (!pw) { errorEl.textContent = 'Please enter the password.'; return; }
+
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = `<div class="publishing-spinner"></div> Verifying…`;
+  errorEl.textContent = '';
+
+  try {
+    const verifyRes = await fetch('/api/admin/verify', {
+      headers: { 'x-admin-password': pw }
+    });
+
+    if (verifyRes.status === 401) {
+      errorEl.textContent = 'Incorrect password. Please try again.';
+      input.value = '';
+      input.focus();
+      return;
+    }
+
+    state.sessionPassword = pw;
+    closePasswordModal();
+    publishSite(pw);
+  } catch {
+    errorEl.textContent = 'Network error. Please try again.';
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg> Publish`;
+  }
+}
+
 /* ===== PUBLISH ===== */
-async function publishSite() {
+async function publishSite(password) {
   const btn = document.getElementById('publishBtn');
-  const label = document.getElementById('publishLabel');
   const html = state.editors.html.getValue();
   const css = state.editors.css.getValue();
   const js = state.editors.js.getValue();
   const title = document.getElementById('projectTitle').value.trim() || 'Untitled Project';
 
+  if (!html && !css && !js) {
+    showToast('Add some code before publishing.', 'error');
+    return;
+  }
+
   btn.disabled = true;
-  label.textContent = 'Publishing…';
   btn.innerHTML = `<div class="publishing-spinner"></div> <span>Publishing…</span>`;
 
   try {
-    const payload = { title, html, css, js };
+    const payload = { password, title, html, css, js };
     if (state.siteId && state.editToken) {
       payload.siteId = state.siteId;
       payload.editToken = state.editToken;
@@ -320,6 +401,12 @@ async function publishSite() {
     });
 
     const data = await res.json();
+
+    if (res.status === 401) {
+      state.sessionPassword = null;
+      showToast('Incorrect password.', 'error');
+      return;
+    }
 
     if (!res.ok) throw new Error(data.error || 'Failed to publish.');
 
