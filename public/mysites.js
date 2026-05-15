@@ -17,17 +17,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 /* ===== AUTH CHECK + USER CHIP ===== */
 async function loadCurrentUser() {
   try {
-    const res = await fetch('/api/me');
-    if (!res.ok) {
-      window.location.href = '/?redirect=/mysites';
-      return;
-    }
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) return; // server-side requireAuth already handles unauth redirect
     const user = await res.json();
+    if (!user || !user.name) return;
     const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     document.getElementById('msUserAvatar').textContent = initials;
     document.getElementById('msUserName').textContent = user.name;
   } catch {
-    window.location.href = '/?redirect=/mysites';
+    // silently ignore — server-side auth is the real guard
   }
 }
 
@@ -37,7 +35,8 @@ async function loadMySites() {
   try {
     const res = await fetch('/api/my-sites');
     if (res.status === 401) {
-      window.location.href = '/?redirect=/mysites';
+      // Session truly expired — let server handle it on next navigation
+      window.location.replace('/');
       return;
     }
     if (!res.ok) throw new Error('Failed to load sites.');
