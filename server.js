@@ -21,7 +21,7 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
 });
 
-// Ensure tables exist
+// Ensure tables exist and run migrations
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -39,11 +39,14 @@ async function initDB() {
       css_code TEXT DEFAULT '',
       js_code TEXT DEFAULT '',
       edit_token VARCHAR(64),
-      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
       views INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
+  `);
+  // Migration: add user_id to sites if not present
+  await pool.query(`
+    ALTER TABLE sites ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
   `);
   console.log('Database ready');
 }
