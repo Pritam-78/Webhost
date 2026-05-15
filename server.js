@@ -44,10 +44,9 @@ async function initDB() {
       updated_at TIMESTAMP DEFAULT NOW()
     );
   `);
-  // Migration: add user_id to sites if not present
-  await pool.query(`
-    ALTER TABLE sites ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
-  `);
+  // Migrations
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;`);
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS custom_slug VARCHAR(80) UNIQUE;`);
   console.log('Database ready');
 }
 initDB().catch(console.error);
@@ -287,6 +286,27 @@ app.delete('/api/site/:siteId', async (req, res) => {
   }
 });
 
+// Serve site by custom slug
+app.get('/s/:customSlug', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, html_code, css_code, js_code, title FROM sites WHERE custom_slug = $1',
+      [req.params.customSlug]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>404</title>
+<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0f172a;color:#e2e8f0}.box{text-align:center}h1{font-size:4rem;margin:0;color:#6366f1}p{color:#94a3b8;margin:12px 0 24px}a{color:#6366f1;text-decoration:none;font-weight:600}</style>
+</head><body><div class="box"><h1>404</h1><p>This site doesn't exist or has been removed.</p><a href="/">← Back to CodeHost</a></div></body></html>`);
+    }
+    await pool.query('UPDATE sites SET views = views + 1 WHERE id = $1', [result.rows[0].id]);
+    const { html_code, css_code, js_code, title } = result.rows[0];
+    res.set('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${escapeHtml(title)}</title><style>${css_code}</style></head><body>${html_code}<script>${js_code}<\/script></body></html>`);
+  } catch (err) {
+    res.status(500).send('Error loading site.');
+  }
+});
+
 app.get('/site/:siteId', async (req, res) => {
   try {
     const result = await pool.query(
@@ -312,7 +332,7 @@ app.get('/site/:siteId', async (req, res) => {
 app.get('/api/my-sites', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, title, views, created_at, updated_at
+      `SELECT id, title, views, custom_slug, created_at, updated_at
        FROM sites WHERE user_id = $1 ORDER BY created_at DESC`,
       [req.session.userId]
     );
@@ -320,6 +340,47 @@ app.get('/api/my-sites', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('My sites error:', err);
     res.status(500).json({ error: 'Failed to load your sites.' });
+  }
+});
+
+// Set or update custom URL slug for a user's site
+app.put('/api/my-sites/:siteId/custom-url', requireAuth, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const { slug } = req.body;
+
+    // Validate ownership
+    const siteRes = await pool.query('SELECT id, user_id FROM sites WHERE id = $1', [siteId]);
+    if (siteRes.rows.length === 0) return res.status(404).json({ error: 'Site not found.' });
+    if (String(siteRes.rows[0].user_id) !== String(req.session.userId)) {
+      return res.status(403).json({ error: 'You do not own this site.' });
+    }
+
+    // Allow clearing the custom slug
+    if (!slug || slug.trim() === '') {
+      await pool.query('UPDATE sites SET custom_slug = NULL WHERE id = $1', [siteId]);
+      return res.json({ success: true, custom_slug: null });
+    }
+
+    const clean = slug.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!/^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/.test(clean) && !/^[a-z0-9]{3,80}$/.test(clean)) {
+      return res.status(400).json({ error: 'Slug must be 3–80 characters: letters, numbers, hyphens only.' });
+    }
+
+    // Check uniqueness (excluding this site)
+    const existing = await pool.query(
+      'SELECT id FROM sites WHERE custom_slug = $1 AND id != $2',
+      [clean, siteId]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'That custom URL is already taken. Try another.' });
+    }
+
+    await pool.query('UPDATE sites SET custom_slug = $1 WHERE id = $2', [clean, siteId]);
+    res.json({ success: true, custom_slug: clean });
+  } catch (err) {
+    console.error('Custom URL error:', err);
+    res.status(500).json({ error: 'Failed to set custom URL.' });
   }
 });
 

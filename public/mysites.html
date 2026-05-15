@@ -85,24 +85,53 @@
       </a>
     </div>
 
-    <!-- SITES TABLE -->
-    <div class="ms-table-wrap" id="msSitesWrap" style="display:none">
-      <table class="ms-table">
-        <thead>
-          <tr>
-            <th>Website Name</th>
-            <th>Hosted Link</th>
-            <th class="hide-sm">Views</th>
-            <th class="hide-sm">Published</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="msSitesBody"></tbody>
-      </table>
+    <!-- SITES CARDS -->
+    <div id="msSitesWrap" style="display:none">
+      <div class="ms-cards" id="msSitesBody"></div>
     </div>
 
   </main>
+
+  <!-- CUSTOM URL MODAL -->
+  <div class="ms-modal-overlay" id="msUrlOverlay" style="display:none" role="dialog" aria-modal="true">
+    <div class="ms-modal">
+      <div class="ms-modal-header">
+        <div class="ms-modal-icon" style="background:rgba(99,102,241,0.12);color:#6366f1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <h3>Custom URL</h3>
+          <p class="ms-modal-site-name" id="msUrlSiteName"></p>
+        </div>
+        <button class="ms-modal-close" id="msUrlClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="ms-modal-body">
+        <p style="font-size:0.85rem;color:var(--text2);line-height:1.6">Choose a short, memorable name for your site. It will be available at <strong style="color:var(--text)">yoursite.com/s/<span id="msUrlPreviewSlug" style="color:var(--primary)">my-site</span></strong></p>
+        <label class="ms-label">Custom URL slug</label>
+        <div class="ms-slug-input-row">
+          <span class="ms-slug-prefix">/s/</span>
+          <input type="text" id="msUrlSlugInput" class="ms-input ms-slug-input" placeholder="my-portfolio" maxlength="80" autocomplete="off" spellcheck="false" />
+        </div>
+        <p class="ms-slug-hint">Letters, numbers and hyphens only. Min 3 characters.</p>
+        <div class="ms-modal-error" id="msUrlError" style="display:none"></div>
+        <div class="ms-modal-success" id="msUrlSuccess" style="display:none"></div>
+        <div id="msCurrentSlugRow" style="display:none" class="ms-current-slug-row">
+          <span>Current custom URL:</span>
+          <a id="msCurrentSlugLink" href="#" target="_blank" rel="noopener" class="ms-current-slug-link"></a>
+          <button class="ms-remove-slug-btn" id="msRemoveSlug">Remove</button>
+        </div>
+      </div>
+      <div class="ms-modal-footer">
+        <button class="ms-btn ms-btn-ghost" id="msUrlCancel">Cancel</button>
+        <button class="ms-btn ms-btn-primary" id="msUrlSave">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="msUrlSaveLabel">Save Custom URL</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- DELETE MODAL -->
   <div class="ms-modal-overlay" id="msDeleteOverlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="msModalTitle">
