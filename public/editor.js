@@ -15,15 +15,60 @@ const state = {
   sessionPassword: null,
 };
 
+/* ===== CURRENT USER ===== */
+let currentUser = null;
+
 /* ===== INIT ===== */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  await loadCurrentUser();
   initEditors();
   initTabs();
   initDivider();
   checkUrlForSite();
   bindUI();
+  showWelcomeIfNeeded();
 });
+
+/* ===== LOAD USER ===== */
+async function loadCurrentUser() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) {
+      window.location.href = '/';
+      return;
+    }
+    currentUser = await res.json();
+    renderUserChip(currentUser);
+  } catch {
+    window.location.href = '/';
+  }
+}
+
+function renderUserChip(user) {
+  const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const avatarEl = document.getElementById('userAvatar');
+  const nameEl = document.getElementById('userNameDisplay');
+  const emailEl = document.getElementById('userEmailDisplay');
+  if (avatarEl) avatarEl.textContent = initials;
+  if (nameEl) nameEl.textContent = user.name.split(' ')[0];
+  if (emailEl) emailEl.textContent = user.email;
+}
+
+function showWelcomeIfNeeded() {
+  const raw = sessionStorage.getItem('ch-welcome');
+  if (!raw) return;
+  sessionStorage.removeItem('ch-welcome');
+  const { name, isNew } = JSON.parse(raw);
+  const toast = document.getElementById('welcomeToast');
+  const msg = document.getElementById('welcomeMsg');
+  if (!toast || !msg) return;
+  msg.textContent = isNew ? `Welcome, ${name}! Your account is ready.` : `Welcome back, ${name}!`;
+  toast.style.display = 'flex';
+  const close = document.getElementById('welcomeClose');
+  close.addEventListener('click', () => { toast.style.display = 'none'; });
+  setTimeout(() => { toast.style.display = 'none'; }, 5000);
+}
 
 /* ===== THEME ===== */
 function initTheme() {
@@ -310,6 +355,29 @@ function bindUI() {
       state.editors[state.activeTab].setValue('');
     }
   });
+
+  // User chip menu
+  const chip = document.getElementById('userChip');
+  const dropdown = document.getElementById('userDropdown');
+  const menuBtn = document.getElementById('userMenuBtn');
+  if (chip && dropdown && menuBtn) {
+    chip.addEventListener('click', (e) => {
+      const open = dropdown.style.display !== 'none';
+      dropdown.style.display = open ? 'none' : 'block';
+    });
+    document.addEventListener('click', (e) => {
+      if (!chip.contains(e.target)) dropdown.style.display = 'none';
+    });
+  }
+
+  // Logout
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+  }
 }
 
 /* ===== PASSWORD MODAL ===== */
@@ -577,7 +645,7 @@ function resetProject() {
   document.querySelector('.main').classList.remove('banner-visible');
   const label = document.getElementById('publishLabel');
   if (label) label.textContent = 'Publish';
-  window.history.replaceState({}, '', '/');
+  window.history.replaceState({}, '', '/app');
   updatePreview();
 }
 

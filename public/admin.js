@@ -3,7 +3,9 @@ const adminState = {
   password: null,
   sites: [],
   filtered: [],
+  users: [],
   pendingDeleteId: null,
+  activeSection: 'sites',
 };
 
 /* ===== INIT ===== */
@@ -88,6 +90,16 @@ function bindUI() {
 
   document.getElementById('refreshBtn').addEventListener('click', loadSites);
 
+  // Admin nav tabs
+  document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const section = btn.dataset.section;
+      switchAdminSection(section);
+    });
+  });
+
+  document.getElementById('refreshUsersBtn').addEventListener('click', loadUsers);
+
   document.getElementById('searchInput').addEventListener('input', (e) => {
     filterSites(e.target.value);
   });
@@ -108,6 +120,76 @@ function bindUI() {
 
   document.getElementById('deletePassword').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') performDelete();
+  });
+}
+
+/* ===== SWITCH SECTION ===== */
+function switchAdminSection(section) {
+  adminState.activeSection = section;
+  document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === section);
+  });
+  document.getElementById('sectionSites').style.display = section === 'sites' ? '' : 'none';
+  document.getElementById('sectionUsers').style.display = section === 'users' ? '' : 'none';
+
+  if (section === 'users' && adminState.users.length === 0) {
+    loadUsers();
+  }
+}
+
+/* ===== LOAD USERS ===== */
+async function loadUsers() {
+  const loadingEl = document.getElementById('usersLoading');
+  const emptyEl = document.getElementById('usersEmpty');
+  const tableWrap = document.getElementById('usersTableWrap');
+
+  loadingEl.style.display = 'flex';
+  emptyEl.style.display = 'none';
+  tableWrap.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: { 'x-admin-password': adminState.password }
+    });
+    if (!res.ok) throw new Error('Failed to load users.');
+    const data = await res.json();
+    adminState.users = data.users || [];
+
+    loadingEl.style.display = 'none';
+
+    if (adminState.users.length === 0) {
+      emptyEl.style.display = 'flex';
+      return;
+    }
+
+    renderUsersTable(adminState.users);
+    tableWrap.style.display = '';
+  } catch (err) {
+    loadingEl.style.display = 'none';
+    emptyEl.style.display = 'flex';
+    emptyEl.querySelector('p').textContent = err.message || 'Failed to load users.';
+  }
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('usersBody');
+  tbody.innerHTML = '';
+  users.forEach(user => {
+    const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="user-row-name">
+          <div class="user-avatar-sm">${escapeHtml(initials)}</div>
+          <span>${escapeHtml(user.name)}</span>
+        </div>
+      </td>
+      <td><span class="site-id" style="font-size:0.8rem">${escapeHtml(user.email)}</span></td>
+      <td class="hide-sm"><span class="sites-badge">${user.site_count || 0} sites</span></td>
+      <td class="hide-sm"><span class="date-text">${formatDate(user.created_at)}</span></td>
+      <td class="hide-sm"><span class="date-text">${formatDate(user.last_login)}</span></td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 

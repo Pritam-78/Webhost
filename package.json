@@ -13,9 +13,11 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^18.0.6",
+    "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "nanoid": "^5.1.11",
     "node-fetch": "^3.2.6",

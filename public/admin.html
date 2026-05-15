@@ -65,7 +65,7 @@
           <svg class="icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <svg class="icon-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
-        <a href="/" class="btn btn-secondary">
+        <a href="/app" class="btn btn-secondary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Editor
         </a>
@@ -78,6 +78,21 @@
 
     <!-- MAIN CONTENT -->
     <main class="main">
+
+      <!-- ADMIN NAV TABS -->
+      <div class="admin-nav">
+        <button class="admin-nav-btn active" id="navSites" data-section="sites">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+          Websites
+        </button>
+        <button class="admin-nav-btn" id="navUsers" data-section="users">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Registered Users
+        </button>
+      </div>
+
+      <!-- SITES SECTION -->
+      <div id="sectionSites">
 
       <!-- STATS ROW -->
       <div class="stats-row">
@@ -170,6 +185,48 @@
           <p>No results for your search.</p>
         </div>
       </div>
+      </div><!-- end sectionSites -->
+
+      <!-- USERS SECTION -->
+      <div id="sectionUsers" style="display:none">
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Registered Users
+            </div>
+            <button class="btn btn-ghost icon-btn" id="refreshUsersBtn" title="Refresh">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+            </button>
+          </div>
+
+          <div class="loading" id="usersLoading" style="display:none">
+            <div class="spinner"></div>
+            <span>Loading users…</span>
+          </div>
+
+          <div class="empty-state" id="usersEmpty" style="display:none">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>No users registered yet.</p>
+          </div>
+
+          <div class="table-wrap" id="usersTableWrap" style="display:none">
+            <table class="sites-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th class="hide-sm">Sites</th>
+                  <th class="hide-sm">Registered</th>
+                  <th class="hide-sm">Last Login</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- end sectionUsers -->
+
     </main>
   </div>
 
