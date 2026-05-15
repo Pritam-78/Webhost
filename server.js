@@ -14,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = 5000;
 const SALT_ROUNDS = 12;
-const ADMIN_PASSWORD = 'pritamkp@ixA';
+const ADMIN_PASSWORD = 'pritam@ixA';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -316,8 +316,35 @@ app.get('/editor/:siteId', requireAuth, (req, res) => {
   res.sendFile(join(__dirname, 'public', 'app.html'));
 });
 
-app.get('/admin', (req, res) => {
+// Secret admin URL — only this path reveals the dashboard
+app.get('/pkpadminweb', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'admin.html'));
+});
+
+// Block /admin — show nothing useful
+app.get('/admin', (req, res) => {
+  res.status(404).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Not Found</title>
+<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0f172a;color:#e2e8f0}.box{text-align:center}h1{font-size:3.5rem;margin:0;color:#6366f1}p{color:#94a3b8;margin:12px 0 24px}a{color:#6366f1;text-decoration:none;font-weight:600}</style>
+</head><body><div class="box"><h1>404</h1><p>Page not found.</p><a href="/">← Back to CodeHost</a></div></body></html>`);
+});
+
+// Per-user sites (admin only)
+app.get('/api/admin/user/:userId/sites', async (req, res) => {
+  try {
+    const password = req.headers['x-admin-password'];
+    if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Incorrect password.' });
+    const { userId } = req.params;
+    const userRes = await pool.query('SELECT id, email, name, created_at, last_login FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found.' });
+    const sitesRes = await pool.query(
+      `SELECT id, title, views, created_at, updated_at FROM sites WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+    res.json({ user: userRes.rows[0], sites: sitesRes.rows, total: sitesRes.rows.length });
+  } catch (err) {
+    console.error('Admin user sites error:', err);
+    res.status(500).json({ error: 'Failed to load user sites.' });
+  }
 });
 
 function escapeHtml(str) {

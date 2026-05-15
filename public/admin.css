@@ -671,3 +671,102 @@ html, body {
   font-size: 0.77rem;
   font-weight: 600;
 }
+
+/* ===== CLICKABLE EMAIL ===== */
+.email-link {
+  color: var(--primary);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(99,102,241,0.4);
+  transition: color 0.15s, border-color 0.15s;
+  padding-bottom: 1px;
+}
+.email-link:hover {
+  color: #818cf8;
+  border-bottom-color: #818cf8;
+}
+
+/* ===== USER DETAIL ===== */
+.user-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.user-detail-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+}
+
+.user-detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+}
+
+.user-detail-info { flex: 1; min-width: 0; }
+
+.user-detail-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.user-detail-email {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.user-detail-meta {
+  font-size: 0.8rem;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ud-sep { color: var(--text3); }
+
+.ud-site-count {
+  font-weight: 600;
+  color: var(--success);
+}
+
+.hosted-link-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hosted-link-cell a {
+  color: var(--primary);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  border-bottom: 1px dashed rgba(99,102,241,0.3);
+}
+.hosted-link-cell a:hover { color: #818cf8; }

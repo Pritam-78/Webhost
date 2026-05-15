@@ -123,6 +123,15 @@
             <div class="stat-label">Most Recent</div>
           </div>
         </div>
+        <div class="stat-card" style="cursor:pointer" id="usersStatCard">
+          <div class="stat-icon" style="background:rgba(168,85,247,0.12);color:#a855f7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-value" id="totalUsersCount">—</div>
+            <div class="stat-label">Registered Users</div>
+          </div>
+        </div>
       </div>
 
       <!-- TABLE SECTION -->
@@ -226,6 +235,59 @@
           </div>
         </div>
       </div><!-- end sectionUsers -->
+
+      <!-- USER DETAIL SECTION -->
+      <div id="sectionUserDetail" style="display:none">
+        <div class="user-detail-header">
+          <button class="btn btn-ghost" id="backToUsers">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to Users
+          </button>
+        </div>
+        <div class="user-detail-card" id="userDetailCard">
+          <div class="user-detail-avatar" id="detailAvatar"></div>
+          <div class="user-detail-info">
+            <div class="user-detail-name" id="detailName"></div>
+            <div class="user-detail-email" id="detailEmail"></div>
+            <div class="user-detail-meta">
+              <span id="detailJoined"></span>
+              <span class="ud-sep">·</span>
+              <span class="ud-site-count" id="detailSiteCount"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+              Hosted Websites
+            </div>
+          </div>
+
+          <div class="loading" id="userSitesLoading" style="display:none">
+            <div class="spinner"></div><span>Loading…</span>
+          </div>
+          <div class="empty-state" id="userSitesEmpty" style="display:none">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+            <p>This user has not published any websites yet.</p>
+          </div>
+          <div class="table-wrap" id="userSitesTableWrap" style="display:none">
+            <table class="sites-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Hosted Link</th>
+                  <th class="hide-sm">Views</th>
+                  <th class="hide-sm">Published</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="userSitesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- end sectionUserDetail -->
 
     </main>
   </div>

@@ -100,6 +100,14 @@ function bindUI() {
 
   document.getElementById('refreshUsersBtn').addEventListener('click', loadUsers);
 
+  document.getElementById('backToUsers').addEventListener('click', () => {
+    switchAdminSection('users');
+  });
+
+  document.getElementById('usersStatCard').addEventListener('click', () => {
+    switchAdminSection('users');
+  });
+
   document.getElementById('searchInput').addEventListener('input', (e) => {
     filterSites(e.target.value);
   });
@@ -131,6 +139,7 @@ function switchAdminSection(section) {
   });
   document.getElementById('sectionSites').style.display = section === 'sites' ? '' : 'none';
   document.getElementById('sectionUsers').style.display = section === 'users' ? '' : 'none';
+  document.getElementById('sectionUserDetail').style.display = section === 'userDetail' ? '' : 'none';
 
   if (section === 'users' && adminState.users.length === 0) {
     loadUsers();
@@ -184,12 +193,109 @@ function renderUsersTable(users) {
           <span>${escapeHtml(user.name)}</span>
         </div>
       </td>
-      <td><span class="site-id" style="font-size:0.8rem">${escapeHtml(user.email)}</span></td>
-      <td class="hide-sm"><span class="sites-badge">${user.site_count || 0} sites</span></td>
+      <td>
+        <button class="email-link" data-userid="${user.id}" title="View websites by ${escapeHtml(user.email)}">
+          ${escapeHtml(user.email)}
+        </button>
+      </td>
+      <td class="hide-sm"><span class="sites-badge">${user.site_count || 0} site${user.site_count === 1 ? '' : 's'}</span></td>
       <td class="hide-sm"><span class="date-text">${formatDate(user.created_at)}</span></td>
       <td class="hide-sm"><span class="date-text">${formatDate(user.last_login)}</span></td>
     `;
     tbody.appendChild(tr);
+  });
+
+  // Bind clickable emails
+  document.querySelectorAll('.email-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const userId = btn.dataset.userid;
+      const user = adminState.users.find(u => String(u.id) === String(userId));
+      if (user) loadUserDetail(user);
+    });
+  });
+}
+
+/* ===== USER DETAIL ===== */
+async function loadUserDetail(user) {
+  switchAdminSection('userDetail');
+
+  // Fill in header card immediately
+  const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('detailAvatar').textContent = initials;
+  document.getElementById('detailName').textContent = user.name;
+  document.getElementById('detailEmail').textContent = user.email;
+  document.getElementById('detailJoined').textContent = 'Joined ' + formatDate(user.created_at, true);
+  document.getElementById('detailSiteCount').textContent = 'Loading sites…';
+
+  // Show loading
+  document.getElementById('userSitesLoading').style.display = 'flex';
+  document.getElementById('userSitesEmpty').style.display = 'none';
+  document.getElementById('userSitesTableWrap').style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/admin/user/${user.id}/sites`, {
+      headers: { 'x-admin-password': adminState.password }
+    });
+    if (!res.ok) throw new Error('Failed to load sites.');
+    const data = await res.json();
+
+    document.getElementById('userSitesLoading').style.display = 'none';
+
+    const count = data.total || 0;
+    document.getElementById('detailSiteCount').textContent =
+      `Hosted ${count} website${count === 1 ? '' : 's'}`;
+
+    if (count === 0) {
+      document.getElementById('userSitesEmpty').style.display = 'flex';
+      return;
+    }
+
+    renderUserSitesTable(data.sites);
+    document.getElementById('userSitesTableWrap').style.display = '';
+  } catch (err) {
+    document.getElementById('userSitesLoading').style.display = 'none';
+    document.getElementById('userSitesEmpty').style.display = 'flex';
+    document.getElementById('userSitesEmpty').querySelector('p').textContent = err.message;
+  }
+}
+
+function renderUserSitesTable(sites) {
+  const tbody = document.getElementById('userSitesBody');
+  tbody.innerHTML = '';
+  sites.forEach(site => {
+    const siteUrl = `${window.location.origin}/site/${site.id}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="site-title" title="${escapeHtml(site.title)}">${escapeHtml(site.title)}</div></td>
+      <td class="hosted-link-cell">
+        <a href="${siteUrl}" target="_blank" rel="noopener">${siteUrl}</a>
+      </td>
+      <td class="hide-sm">
+        <span class="views-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          ${(site.views || 0).toLocaleString()}
+        </span>
+      </td>
+      <td class="hide-sm"><span class="date-text">${formatDate(site.created_at)}</span></td>
+      <td>
+        <div class="row-actions">
+          <a href="${siteUrl}" target="_blank" rel="noopener" class="btn btn-open" style="padding:6px 10px;font-size:0.78rem">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View
+          </a>
+          <button class="btn btn-del" style="padding:6px 10px;font-size:0.78rem" data-id="${escapeHtml(site.id)}" data-title="${escapeHtml(site.title)}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Delete
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Bind delete buttons
+  tbody.querySelectorAll('.btn-del').forEach(btn => {
+    btn.addEventListener('click', () => openDeleteModal(btn.dataset.id, btn.dataset.title));
   });
 }
 
@@ -235,6 +341,24 @@ function updateStats(data) {
   } else {
     document.getElementById('latestDate').textContent = '—';
   }
+
+  // Load total users count for the stat card
+  loadUserCount();
+}
+
+async function loadUserCount() {
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: { 'x-admin-password': adminState.password }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('totalUsersCount').textContent = data.total ?? 0;
+    // Cache users if not yet loaded
+    if (adminState.users.length === 0 && data.users) {
+      adminState.users = data.users;
+    }
+  } catch { /* silently ignore */ }
 }
 
 /* ===== RENDER TABLE ===== */
