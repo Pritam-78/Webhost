@@ -307,6 +307,53 @@ app.get('/site/:siteId', async (req, res) => {
   }
 });
 
+/* ===== MY SITES API ===== */
+// Get current user's hosted sites
+app.get('/api/my-sites', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, title, views, created_at, updated_at
+       FROM sites WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.session.userId]
+    );
+    res.json({ sites: result.rows, total: result.rows.length });
+  } catch (err) {
+    console.error('My sites error:', err);
+    res.status(500).json({ error: 'Failed to load your sites.' });
+  }
+});
+
+// Delete a user's own site (password verification required)
+app.delete('/api/my-sites/:siteId', requireAuth, async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password is required.' });
+
+    // Verify ownership
+    const siteRes = await pool.query(
+      'SELECT id, user_id FROM sites WHERE id = $1',
+      [siteId]
+    );
+    if (siteRes.rows.length === 0) return res.status(404).json({ error: 'Site not found.' });
+    if (String(siteRes.rows[0].user_id) !== String(req.session.userId)) {
+      return res.status(403).json({ error: 'You do not own this site.' });
+    }
+
+    // Verify password
+    const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.session.userId]);
+    if (userRes.rows.length === 0) return res.status(401).json({ error: 'User not found.' });
+    const valid = await bcrypt.compare(password, userRes.rows[0].password_hash);
+    if (!valid) return res.status(401).json({ error: 'Incorrect password.' });
+
+    await pool.query('DELETE FROM sites WHERE id = $1', [siteId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete site error:', err);
+    res.status(500).json({ error: 'Failed to delete site.' });
+  }
+});
+
 /* ===== PAGE ROUTES ===== */
 app.get('/app', requireAuth, (req, res) => {
   res.sendFile(join(__dirname, 'public', 'app.html'));
@@ -314,6 +361,10 @@ app.get('/app', requireAuth, (req, res) => {
 
 app.get('/editor/:siteId', requireAuth, (req, res) => {
   res.sendFile(join(__dirname, 'public', 'app.html'));
+});
+
+app.get('/mysites', requireAuth, (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'mysites.html'));
 });
 
 // Secret admin URL — only this path reveals the dashboard
